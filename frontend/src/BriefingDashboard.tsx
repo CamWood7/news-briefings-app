@@ -725,6 +725,44 @@ const BriefingDashboard: React.FC = () => {
     }
   };
 
+  // KeywordInput: pill-style add keyword input for repeat keywords
+  const KeywordInput: React.FC<{ onAdd: (kw: string) => void }> = ({ onAdd }) => {
+    const [value, setValue] = useState('');
+    const inputRef = React.useRef<HTMLInputElement>(null);
+    const handleAdd = () => {
+      if (value.trim()) {
+        onAdd(value.trim());
+        setValue('');
+        if (inputRef.current) inputRef.current.blur();
+      }
+    };
+    return (
+      <div className="inline-flex items-center bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-full px-2 py-1">
+        <input
+          ref={inputRef}
+          type="text"
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') handleAdd();
+          }}
+          placeholder="Add keyword"
+          className="bg-transparent border-none outline-none text-xs px-1 py-0 w-20 min-w-0"
+          maxLength={32}
+        />
+        <button
+          type="button"
+          className="ml-1 text-teal-600 hover:text-teal-800 text-xs font-bold focus:outline-none"
+          onClick={handleAdd}
+          tabIndex={-1}
+          aria-label="Add keyword"
+        >
+          +
+        </button>
+      </div>
+    );
+  };
+
   if (isLoadingConfig) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-200 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
@@ -753,7 +791,7 @@ const BriefingDashboard: React.FC = () => {
                   }}
                   className="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-semibold transition duration-200"
                 >
-                  ← Back to Briefings
+                  ←
                 </button>
               )}
             </div>
@@ -836,11 +874,11 @@ const BriefingDashboard: React.FC = () => {
                   <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Selected Topics:
                   </h4>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 w-full">
                     {config.topics.map((topic, topicIdx) => (
                       <div
                         key={topic.id}
-                        className="flex flex-col items-start gap-1 px-3 py-2 bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300 rounded-lg text-sm min-w-[180px]"
+                        className="flex flex-col items-start gap-1 px-1.5 py-1 md:px-2 md:py-2 bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300 rounded-lg text-sm w-full min-w-0"
                       >
                         <div className="flex items-center gap-2 w-full">
                           <span className="font-medium">{topic.name}</span>
@@ -853,68 +891,66 @@ const BriefingDashboard: React.FC = () => {
                         </div>
                         {/* Repeat Keywords UI */}
                         <div className="flex flex-col gap-1 w-full mt-1">
-                          <label className="text-xs text-gray-600 dark:text-gray-400">Refine with up to 2 keywords (optional):</label>
-                          {topic.repeatKeywords.map((kw, kwIdx) => (
-                            <div key={kwIdx} className="flex items-center gap-1 w-full">
-                              <input
-                                type="text"
-                                value={kw}
-                                maxLength={32}
-                                onChange={e => {
-                                  const val = e.target.value;
-                                  setConfig(prev => ({
-                                    ...prev,
-                                    topics: prev.topics.map((t, i) =>
-                                      i === topicIdx
-                                        ? { ...t, repeatKeywords: t.repeatKeywords.map((k, j) => j === kwIdx ? val : k) }
-                                        : t
-                                    )
-                                  }));
-                                }}
-                                className="flex-1 px-2 py-1 rounded border border-gray-300 dark:border-gray-700 text-xs bg-white dark:bg-gray-800"
-                                placeholder="Keyword"
-                              />
-                              <button
-                                type="button"
-                                className="text-red-500 hover:text-red-700 px-1"
-                                onClick={() => {
-                                  setConfig(prev => ({
-                                    ...prev,
-                                    topics: prev.topics.map((t, i) =>
-                                      i === topicIdx
-                                        ? { ...t, repeatKeywords: t.repeatKeywords.filter((_, j) => j !== kwIdx) }
-                                        : t
-                                    )
-                                  }));
-                                }}
-                                title="Remove keyword"
+                          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1">Refine with up to 2 keywords (optional):</label>
+                          <div className="flex flex-wrap gap-2 items-center">
+                            {topic.repeatKeywords.map((kw, kwIdx) => (
+                              <span
+                                key={kwIdx}
+                                className="inline-flex items-center px-3 py-1 rounded-full bg-teal-100 dark:bg-teal-900 border border-teal-200 dark:border-teal-800 text-teal-700 dark:text-teal-300 text-xs font-medium mr-1 mb-1"
                               >
-                                ×
-                              </button>
-                            </div>
-                          ))}
-                          {topic.repeatKeywords.length < 2 && (
-                            <button
-                              type="button"
-                              className="text-xs text-teal-600 hover:text-teal-800 mt-1 underline"
-                              onClick={() => {
-                                setConfig(prev => ({
-                                  ...prev,
-                                  topics: prev.topics.map((t, i) =>
-                                    i === topicIdx
-                                      ? { ...t, repeatKeywords: [...t.repeatKeywords, ''] }
-                                      : t
-                                  )
-                                }));
-                              }}
-                            >
-                              + Add keyword
-                            </button>
-                          )}
+                                {kw}
+                                <button
+                                  type="button"
+                                  className="ml-2 text-xs text-red-500 hover:text-red-700 focus:outline-none"
+                                  style={{ lineHeight: 1 }}
+                                  onClick={() => {
+                                    setConfig(prev => ({
+                                      ...prev,
+                                      topics: prev.topics.map((t, i) =>
+                                        i === topicIdx
+                                          ? { ...t, repeatKeywords: t.repeatKeywords.filter((_, j) => j !== kwIdx) }
+                                          : t
+                                      )
+                                    }));
+                                  }}
+                                  title="Remove keyword"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                            {/* Add keyword input */}
+                            {topic.repeatKeywords.length < 2 && (
+                              <KeywordInput
+                                onAdd={kw => {
+                                  if (kw.trim() && !topic.repeatKeywords.includes(kw.trim())) {
+                                    setConfig(prev => ({
+                                      ...prev,
+                                      topics: prev.topics.map((t, i) =>
+                                        i === topicIdx
+                                          ? { ...t, repeatKeywords: [...t.repeatKeywords, kw.trim()] }
+                                          : t
+                                      )
+                                    }));
+                                  }
+                                }}
+                              />
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
+                  {config.topics.length === 3 && (
+                    <style>{`
+                      @media (max-width: 767px) {
+                        .selected-topics-grid > :nth-child(3) {
+                          grid-column: 1 / span 2;
+                          justify-self: center;
+                        }
+                      }
+                    `}</style>
+                  )}
                 </div>
               )}
             </div>
