@@ -853,8 +853,8 @@ const BriefingDashboard: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 p-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="flex-1 p-4 sm:p-8">
+      <div className="w-full max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div className="flex-1 min-w-0">
