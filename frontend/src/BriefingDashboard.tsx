@@ -322,7 +322,8 @@ const BriefingDashboard: React.FC = () => {
         created_at: selectedConfig.created_at,
         updated_at: selectedConfig.updated_at
       });
-      
+      // Clear any existing topic filters
+      setSelectedTopicFilter('all');
       // Load the latest briefing for this config
       if (currentUser) {
         loadLatestBriefing(currentUser.id, selectedConfig.id);
