@@ -735,9 +735,9 @@ const BriefingDashboard: React.FC = () => {
 
   if (isSetupMode) {
     return (
-      <div className="flex-1 p-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-lg border border-slate-100 dark:border-gray-800">
+      <div className="flex-1 p-4 sm:p-8 w-full">
+        <div className="w-full max-w-4xl mx-auto">
+          <div className="bg-white dark:bg-gray-900 w-full p-4 sm:p-8 rounded-2xl shadow-lg border border-slate-100 dark:border-gray-800">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
                 {isCreatingNew ? 'Create New Briefing' : 'Set Up Your Briefing'}
