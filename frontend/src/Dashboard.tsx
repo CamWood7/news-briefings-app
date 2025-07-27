@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { saveNewsSearch } from './api/newsHistory';
 import { supabase } from './supabaseClient';
+import { API_BASE_URL } from './config';
 
 interface Article {
   title: string;
@@ -65,7 +66,7 @@ const Dashboard: React.FC = () => {
     setAllSummary(null);
     setAllBullets({});
     try {
-      const res = await fetch('http://localhost:5001/api/news', {
+      const res = await fetch(`${API_BASE_URL}/api/news`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ topic, start_date: startDate, end_date: endDate })
@@ -112,7 +113,7 @@ const Dashboard: React.FC = () => {
     setSummarizing(s => ({ ...s, [articleUrl]: true }));
     setSummaries(s => ({ ...s, [articleUrl]: null }));
     try {
-      const res = await fetch('http://localhost:5001/api/summarize', {
+      const res = await fetch(`${API_BASE_URL}/api/summarize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: articleUrl })
@@ -132,7 +133,7 @@ const Dashboard: React.FC = () => {
     setAllSummary(null);
     setAllBullets({});
     try {
-      const res = await fetch('http://localhost:5001/api/summarize_all', {
+      const res = await fetch(`${API_BASE_URL}/api/summarize_all`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ articles })

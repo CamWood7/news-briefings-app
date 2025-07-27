@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 import { saveBriefingHistory, getLatestBriefing, BriefingHistory } from './api/briefingHistory';
+import { API_BASE_URL } from './config';
 
 interface Topic {
   id: string;
@@ -447,7 +448,7 @@ const BriefingDashboard: React.FC = () => {
 
       // Fetch articles for each topic (limit to 3 per topic)
       for (const topic of config.topics) {
-        const res = await fetch('http://localhost:5001/api/news', {
+        const res = await fetch(`${API_BASE_URL}/api/news`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
@@ -472,7 +473,7 @@ const BriefingDashboard: React.FC = () => {
 
       // Generate overall summary if we have articles
       if (allArticles.length > 0) {
-        const summaryRes = await fetch('http://localhost:5001/api/summarize_all', {
+        const summaryRes = await fetch(`${API_BASE_URL}/api/summarize_all`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ articles: allArticles })
@@ -615,7 +616,7 @@ const BriefingDashboard: React.FC = () => {
             if (bullets.length === 0) return { topic, summary: '' };
             
             try {
-              const response = await fetch('http://localhost:5001/api/summarize_topic', {
+              const response = await fetch(`${API_BASE_URL}/api/summarize_topic`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
