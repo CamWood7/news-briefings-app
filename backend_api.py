@@ -41,14 +41,49 @@ def get_news():
     if not topic:
         return jsonify({'error': 'Missing topic'}), 400
 
-    # Build repeat/multi_repeat filter if repeat_keywords are provided
+    # Build repeat/multi_repeat/near/multi_near filter if repeat_keywords are provided
     repeat_filter = None
     if isinstance(repeat_keywords, list) and 1 <= len(repeat_keywords) <= 2:
-        from gdeltdoc import repeat, multi_repeat
+        from gdeltdoc import repeat, multi_repeat, near, multi_near
+        # Helper to check if a keyword is multi-word
+        def is_multi_word(kw):
+            return isinstance(kw, str) and len(kw.strip().split()) > 1
         if len(repeat_keywords) == 1:
-            repeat_filter = repeat(3, repeat_keywords[0])
+            kw = repeat_keywords[0]
+            if is_multi_word(kw):
+                # Use near for multi-word keyword (words must be close together)
+                words = kw.strip().split()
+                repeat_filter = near(5, *words)
+            else:
+                repeat_filter = repeat(3, kw)
         elif len(repeat_keywords) == 2:
-            repeat_filter = multi_repeat([(3, repeat_keywords[0]), (3, repeat_keywords[1])], "AND")
+            kw1, kw2 = repeat_keywords[0], repeat_keywords[1]
+            is_multi1, is_multi2 = is_multi_word(kw1), is_multi_word(kw2)
+            if is_multi1 and is_multi2:
+                # Both are multi-word: use multi_near
+                words1 = kw1.strip().split()
+                words2 = kw2.strip().split()
+                repeat_filter = multi_near([
+                    (5, *words1),
+                    (5, *words2)
+                ], method="AND")
+            elif is_multi1:
+                # kw1 is multi-word, kw2 is single-word
+                words1 = kw1.strip().split()
+                repeat_filter = multi_near([
+                    (5, *words1),
+                    (3, kw2)
+                ], method="AND")
+            elif is_multi2:
+                # kw2 is multi-word, kw1 is single-word
+                words2 = kw2.strip().split()
+                repeat_filter = multi_near([
+                    (3, kw1),
+                    (5, *words2)
+                ], method="AND")
+            else:
+                # Both are single-word: use multi_repeat
+                repeat_filter = multi_repeat([(3, kw1), (3, kw2)], "AND")
 
     f = Filters(
         keyword=topic,
