@@ -853,10 +853,10 @@ const BriefingDashboard: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 p-4 sm:p-8">
+    <div className="flex-1 p-4 sm:p-8 overflow-x-auto">
       <div className="w-full max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 w-full">
           <div className="flex-1 min-w-0">
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">
               Your Briefings
@@ -888,8 +888,8 @@ const BriefingDashboard: React.FC = () => {
 
         {/* Briefing Selector */}
         {briefingConfigs.length > 0 && (
-          <div className="bg-white dark:bg-gray-900 p-4 rounded-2xl shadow-lg border border-slate-100 dark:border-gray-800 mb-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-white dark:bg-gray-900 p-3 sm:p-4 rounded-2xl shadow-lg border border-slate-100 dark:border-gray-800 mb-6 w-full max-w-full">
+            <div className="flex items-center justify-between mb-4 w-full">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
                 Select Briefing
               </h3>
@@ -901,7 +901,7 @@ const BriefingDashboard: React.FC = () => {
               </button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 w-full max-w-full">
               {briefingConfigs.map((briefingConfig) => (
                 <button
                   key={briefingConfig.id}
@@ -942,8 +942,8 @@ const BriefingDashboard: React.FC = () => {
 
         {/* Topic Filters */}
         {articles.length > 0 && (
-          <div className="bg-white dark:bg-gray-900 p-4 rounded-2xl shadow-lg border border-slate-100 dark:border-gray-800 mb-6">
-            <div className="flex items-center gap-4">
+          <div className="bg-white dark:bg-gray-900 p-3 sm:p-4 rounded-2xl shadow-lg border border-slate-100 dark:border-gray-800 mb-6 w-full max-w-full">
+            <div className="flex items-center gap-4 w-full flex-wrap">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filter by topic:</span>
               <button
                 onClick={() => setSelectedTopicFilter('all')}
@@ -974,7 +974,7 @@ const BriefingDashboard: React.FC = () => {
 
         {/* Overall Summary */}
         {overallSummary && (
-          <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-lg border border-slate-100 dark:border-gray-800 mb-8">
+          <div className="bg-white dark:bg-gray-900 p-3 sm:p-6 rounded-2xl shadow-lg border border-slate-100 dark:border-gray-800 mb-8 w-full max-w-full">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
                 Key Takeaways
@@ -1102,12 +1102,12 @@ const BriefingDashboard: React.FC = () => {
 
         {/* Articles */}
         {articles.length > 0 && (
-          <div className="space-y-6">
-            <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+          <div className="space-y-6 w-full max-w-full">
+            <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100 w-full">
               Articles ({articles.filter(article => selectedTopicFilter === 'all' || article.topic === selectedTopicFilter).length})
             </h3>
             
-            <div className="grid gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 w-full max-w-full">
               {articles
                 .filter(article => selectedTopicFilter === 'all' || article.topic === selectedTopicFilter)
                 .map((article, idx) => {
@@ -1117,7 +1117,7 @@ const BriefingDashboard: React.FC = () => {
                   return (
                     <div 
                       key={idx} 
-                      className="bg-white dark:bg-gray-900 rounded-xl shadow-md border border-slate-100 dark:border-gray-800 p-6 hover:shadow-xl transition-all duration-300"
+                      className="bg-white dark:bg-gray-900 rounded-xl shadow-md border border-slate-100 dark:border-gray-800 p-3 sm:p-6 hover:shadow-xl transition-all duration-300 w-full max-w-full"
                     >
                       <div className="flex gap-4">
                         {/* Article image */}
