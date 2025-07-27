@@ -1,5 +1,5 @@
 // API Configuration
-export const API_BASE_URL = process.env.VITE_API_BASE_URL || 'http://localhost:5001';
+export const API_BASE_URL = 'https://news-briefings-app.onrender.com';
 
 // Environment detection
 export const IS_PRODUCTION = process.env.NODE_ENV === 'production';
