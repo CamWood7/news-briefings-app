@@ -145,9 +145,7 @@ def summarize():
 @app.route('/api/summarize_all', methods=['POST'])
 def summarize_all():
     data = request.get_json()
-    print(f"Received data: {data}")  # Debug log
     articles = data.get('articles', [])
-    print(f"Articles: {articles}")  # Debug log
     if not articles or not isinstance(articles, list):
         return jsonify({'error': 'Missing or invalid articles'}), 400
     # Compose a prompt for OpenAI
@@ -184,11 +182,11 @@ All Articles Summary:
 Articles to summarize:
 """
     for idx, article in enumerate(articles, 1):
-        prompt += f"\nArticle {idx} Title: {article.get('title', '')}\nContent: {article.get('summary', '')}"
+        title = article.get('title', '')
+        summary = article.get('summary', '')
+        prompt += f"\nArticle {idx} Title: {title}\nContent: {summary}"
     prompt += "\n\nSummaries:"
     try:
-        print(f"OpenAI API Key: {openai.api_key[:10]}...")  # Debug log (first 10 chars)
-        print(f"Prompt length: {len(prompt)}")  # Debug log
         response = openai.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
@@ -196,12 +194,10 @@ Articles to summarize:
             temperature=0.3
         )
         summary_text = response.choices[0].message.content.strip()
-        print(f"OpenAI response received: {len(summary_text)} chars")  # Debug log
         # Parse the response into per-article and global summary
         # (Frontend can display as plain text or parse further)
         return jsonify({'summary': summary_text})
     except Exception as e:
-        print(f"OpenAI API Error: {str(e)}")  # Debug log
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/summarize_topic', methods=['POST'])
