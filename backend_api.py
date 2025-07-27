@@ -25,21 +25,39 @@ openai.api_key = os.getenv('OPENAI_API_KEY')
 # supabase_key = os.getenv('SUPABASE_ANON_KEY')
 # supabase: Client = create_client(supabase_url, supabase_key)
 
+# ---
+# /api/news now accepts an optional 'repeat_keywords' field (list of up to 2 strings) in the POST body.
+# If provided, it will use Filters.repeat() or Filters.multi_repeat() to filter articles containing those keywords repeated in the text.
+# Example POST body:
+# { "topic": "environment", "repeat_keywords": ["climate", "policy"] }
+# ---
 @app.route('/api/news', methods=['POST'])
 def get_news():
     data = request.get_json()
     topic = data.get('topic', '')
     start_date = data.get('start_date', '2024-05-01')
     end_date = data.get('end_date', '2024-05-07')
+    repeat_keywords = data.get('repeat_keywords', [])
     if not topic:
         return jsonify({'error': 'Missing topic'}), 400
+
+    # Build repeat/multi_repeat filter if repeat_keywords are provided
+    repeat_filter = None
+    if isinstance(repeat_keywords, list) and 1 <= len(repeat_keywords) <= 2:
+        from gdeltdoc import repeat, multi_repeat
+        if len(repeat_keywords) == 1:
+            repeat_filter = repeat(3, repeat_keywords[0])
+        elif len(repeat_keywords) == 2:
+            repeat_filter = multi_repeat([(3, repeat_keywords[0]), (3, repeat_keywords[1])], "AND")
+
     f = Filters(
         keyword=topic,
         num_records=10,  # Fetch more to ensure we get at least 5
         language="eng",
         country = "US",
         start_date=start_date,
-        end_date=end_date
+        end_date=end_date,
+        repeat=repeat_filter
     )
     articles = gd.article_search(f)
     if isinstance(articles, pd.DataFrame):
@@ -91,7 +109,7 @@ def get_news():
         
         if len(filtered_articles) >= 4:
             break
-    
+
     # Return only the first 4 articles with more details
     result = [
         {

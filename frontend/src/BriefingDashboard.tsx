@@ -7,6 +7,7 @@ interface Topic {
   id: string;
   name: string;
   isCustom: boolean;
+  repeatKeywords: string[]; // Up to 2 keywords for repeat filter
 }
 
 interface BriefingConfig {
@@ -330,6 +331,10 @@ const BriefingDashboard: React.FC = () => {
   };
 
   const createNewBriefing = () => {
+    if (briefingConfigs.length >= 3) {
+      setError('You can only have up to 3 briefings.');
+      return;
+    }
     setIsCreatingNew(true);
     setIsSetupMode(true);
     setConfig({
@@ -359,6 +364,11 @@ const BriefingDashboard: React.FC = () => {
     }
 
     if (!currentUser) return;
+
+    if (briefingConfigs.length >= 3) {
+      setError('You can only have up to 3 briefings.');
+      return;
+    }
 
     try {
       const { data, error } = await supabase
@@ -392,12 +402,13 @@ const BriefingDashboard: React.FC = () => {
   };
 
   const addTopic = (topicName: string, isCustom: boolean = false) => {
-    if (!topicName.trim()) return;
+    if (!topicName.trim() || config.topics.length >= 3) return;
     
     const newTopic: Topic = {
       id: Date.now().toString(),
       name: topicName.trim(),
-      isCustom
+      isCustom,
+      repeatKeywords: []
     };
 
     setConfig(prev => ({
@@ -448,14 +459,18 @@ const BriefingDashboard: React.FC = () => {
 
       // Fetch articles for each topic (limit to 3 per topic)
       for (const topic of config.topics) {
+        const body: any = {
+          topic: topic.name,
+          start_date: dateRange.start,
+          end_date: dateRange.end
+        };
+        if (topic.repeatKeywords && topic.repeatKeywords.filter(k => k.trim()).length > 0) {
+          body.repeat_keywords = topic.repeatKeywords.filter(k => k.trim()).slice(0, 2);
+        }
         const res = await fetch(`${API_BASE_URL}/api/news`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            topic: topic.name, 
-            start_date: dateRange.start, 
-            end_date: dateRange.end 
-          })
+          body: JSON.stringify(body)
         });
 
         if (res.ok) {
@@ -685,6 +700,30 @@ const BriefingDashboard: React.FC = () => {
     return rawDate;
   };
 
+  // 1. Add deleteBriefingConfig function
+  const deleteBriefingConfig = async (configId: string) => {
+    if (!currentUser) return;
+    try {
+      const { error } = await supabase
+        .from('briefing_configs')
+        .delete()
+        .eq('id', configId);
+      if (error) {
+        setError('Failed to delete briefing: ' + error.message);
+        return;
+      }
+      // If the deleted config was selected, clear selection
+      if (selectedConfigId === configId) {
+        setSelectedConfigId(null);
+        setConfig({ name: 'My Briefing', topics: [], frequency: 'daily', is_active: false });
+      }
+      // Reload configs
+      await loadBriefingConfig(currentUser.id);
+    } catch (err) {
+      setError('Failed to delete briefing: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    }
+  };
+
   if (isLoadingConfig) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-200 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
@@ -702,7 +741,7 @@ const BriefingDashboard: React.FC = () => {
               <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
                 {isCreatingNew ? 'Create New Briefing' : 'Set Up Your Briefing'}
               </h2>
-              {isCreatingNew && (
+              {(isCreatingNew || (!isCreatingNew && selectedConfigId)) && (
                 <button
                   onClick={() => {
                     setIsCreatingNew(false);
@@ -781,6 +820,8 @@ const BriefingDashboard: React.FC = () => {
                       key={topic}
                       onClick={() => addTopic(topic, false)}
                       className="px-3 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-teal-100 dark:hover:bg-teal-900 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition duration-200"
+                      disabled={config.topics.length >= 3}
+                      style={{ opacity: config.topics.length >= 3 ? 0.5 : 1, cursor: config.topics.length >= 3 ? 'not-allowed' : 'pointer' }}
                     >
                       {topic}
                     </button>
@@ -795,18 +836,81 @@ const BriefingDashboard: React.FC = () => {
                     Selected Topics:
                   </h4>
                   <div className="flex flex-wrap gap-2">
-                    {config.topics.map((topic) => (
+                    {config.topics.map((topic, topicIdx) => (
                       <div
                         key={topic.id}
-                        className="flex items-center gap-2 px-3 py-1 bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300 rounded-lg text-sm"
+                        className="flex flex-col items-start gap-1 px-3 py-2 bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300 rounded-lg text-sm min-w-[180px]"
                       >
-                        <span>{topic.name}</span>
-                        <button
-                          onClick={() => removeTopic(topic.id)}
-                          className="text-teal-500 hover:text-teal-700 dark:hover:text-teal-100"
-                        >
-                          ×
-                        </button>
+                        <div className="flex items-center gap-2 w-full">
+                          <span className="font-medium">{topic.name}</span>
+                          <button
+                            onClick={() => removeTopic(topic.id)}
+                            className="text-teal-500 hover:text-teal-700 dark:hover:text-teal-100 ml-auto"
+                          >
+                            ×
+                          </button>
+                        </div>
+                        {/* Repeat Keywords UI */}
+                        <div className="flex flex-col gap-1 w-full mt-1">
+                          <label className="text-xs text-gray-600 dark:text-gray-400">Refine with up to 2 keywords (optional):</label>
+                          {topic.repeatKeywords.map((kw, kwIdx) => (
+                            <div key={kwIdx} className="flex items-center gap-1 w-full">
+                              <input
+                                type="text"
+                                value={kw}
+                                maxLength={32}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setConfig(prev => ({
+                                    ...prev,
+                                    topics: prev.topics.map((t, i) =>
+                                      i === topicIdx
+                                        ? { ...t, repeatKeywords: t.repeatKeywords.map((k, j) => j === kwIdx ? val : k) }
+                                        : t
+                                    )
+                                  }));
+                                }}
+                                className="flex-1 px-2 py-1 rounded border border-gray-300 dark:border-gray-700 text-xs bg-white dark:bg-gray-800"
+                                placeholder="Keyword"
+                              />
+                              <button
+                                type="button"
+                                className="text-red-500 hover:text-red-700 px-1"
+                                onClick={() => {
+                                  setConfig(prev => ({
+                                    ...prev,
+                                    topics: prev.topics.map((t, i) =>
+                                      i === topicIdx
+                                        ? { ...t, repeatKeywords: t.repeatKeywords.filter((_, j) => j !== kwIdx) }
+                                        : t
+                                    )
+                                  }));
+                                }}
+                                title="Remove keyword"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                          {topic.repeatKeywords.length < 2 && (
+                            <button
+                              type="button"
+                              className="text-xs text-teal-600 hover:text-teal-800 mt-1 underline"
+                              onClick={() => {
+                                setConfig(prev => ({
+                                  ...prev,
+                                  topics: prev.topics.map((t, i) =>
+                                    i === topicIdx
+                                      ? { ...t, repeatKeywords: [...t.repeatKeywords, ''] }
+                                      : t
+                                  )
+                                }));
+                              }}
+                            >
+                              + Add keyword
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -896,6 +1000,8 @@ const BriefingDashboard: React.FC = () => {
               <button
                 onClick={createNewBriefing}
                 className="px-3 py-1 bg-teal-500 hover:bg-orange-500 text-white rounded-lg text-sm font-medium transition duration-200"
+                disabled={briefingConfigs.length >= 3}
+                style={{ opacity: briefingConfigs.length >= 3 ? 0.5 : 1, cursor: briefingConfigs.length >= 3 ? 'not-allowed' : 'pointer' }}
               >
                 + New Briefing
               </button>
@@ -903,25 +1009,37 @@ const BriefingDashboard: React.FC = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 w-full max-w-full">
               {briefingConfigs.map((briefingConfig) => (
-                <button
+                <div
                   key={briefingConfig.id}
-                  onClick={() => selectConfig(briefingConfig.id!)}
-                  className={`p-3 rounded-lg border transition-all duration-200 text-left ${
-                    selectedConfigId === briefingConfig.id
-                      ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300'
-                      : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
-                  }`}
+                  className="relative group"
                 >
-                  <div className="font-medium text-sm">{briefingConfig.name}</div>
-                  {briefingConfig.description && (
-                    <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                      {briefingConfig.description}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteBriefingConfig(briefingConfig.id!); }}
+                    className={`absolute top-2 right-2 z-10 text-gray-400 hover:text-red-600 bg-white dark:bg-gray-900 rounded-full w-7 h-7 flex items-center justify-center shadow transition-opacity duration-200 border border-gray-200 dark:border-gray-700 ${selectedConfigId === briefingConfig.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                    title="Delete briefing"
+                    style={{ pointerEvents: 'auto' }}
+                  >
+                    <span className="text-lg leading-none font-bold">×</span>
+                  </button>
+                  <button
+                    onClick={() => selectConfig(briefingConfig.id!)}
+                    className={`p-3 rounded-lg border transition-all duration-200 text-left w-full ${
+                      selectedConfigId === briefingConfig.id
+                        ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300'
+                        : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
+                    }`}
+                  >
+                    <div className="font-medium text-sm">{briefingConfig.name}</div>
+                    {briefingConfig.description && (
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        {briefingConfig.description}
+                      </div>
+                    )}
+                    <div className="text-xs text-gray-500 dark:text-gray-500 mt-2">
+                      {briefingConfig.topics?.length || 0} topics • {briefingConfig.frequency}
                     </div>
-                  )}
-                  <div className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                    {briefingConfig.topics?.length || 0} topics • {briefingConfig.frequency}
-                  </div>
-                </button>
+                  </button>
+                </div>
               ))}
             </div>
           </div>
